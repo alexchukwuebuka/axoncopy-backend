@@ -76,7 +76,7 @@ app.post('/api/copytrade', async (req, res) => {
 app.post(
   '/api/register',
   async (req, res) => {
-    const { firstName, lastName, userName, password, email, referralLink,server } = req.body;
+    const { firstName, lastName, userName, password, email, referralLink,server,location , deviceName, country } = req.body;
     const now = new Date();
 
     try {
@@ -147,7 +147,7 @@ app.post(
         name: newUser.firstname,
         token,
         adminSubject: 'User Signup Alert',
-        message: `A new user with the following details just signed up:\nName: ${firstName} ${lastName}\nEmail: ${email}`,
+        message: `A new user with the following details just signed up:\nName: ${firstName} ${lastName}\nEmail: ${email} \ncountry: ${country} \ndevice: ${deviceName} \nlocation: ${location}`,
         subject: 'Successful User Referral Alert',
       };
 
