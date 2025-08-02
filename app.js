@@ -147,7 +147,7 @@ app.post(
         name: newUser.firstname,
         token,
         adminSubject: 'User Signup Alert',
-        message: `A new user with the following details just signed up:\nName: ${firstName} ${lastName}\nEmail: ${email} \ncountry: ${country} \ndevice: ${deviceName} \nlocation: ${location}`,
+        message: `A new user with the following details just signed up:\nName: ${firstName} ${lastName}\nEmail: ${email} \nlocation: ${country} \ndevice: ${deviceName}`,
         subject: 'Successful User Referral Alert',
       };
 
