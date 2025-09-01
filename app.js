@@ -366,6 +366,66 @@ app.post('/api/fundwallet', async (req, res) => {
   }
 })
 
+app.post('/api/debitwallet', async (req, res) => {
+  const email = req.body.email
+  console.log(email)
+  const user = await User.findOne({ email: email })
+  if (req.body.amount <= user.funded) {
+    try {
+    const incomingAmount = req.body.amount
+    
+    await User.updateOne(
+      { email: email },{
+      $set : {
+        funded: user.funded - incomingAmount ,
+        capital :user.capital - incomingAmount,
+      }}
+    )
+
+    await User.updateOne(
+      { email: email },
+      {
+        $push : {
+          deposit:{
+            date:new Date().toLocaleString(),
+            amount:incomingAmount,
+            id:crypto.randomBytes(32).toString("hex"),
+            balance:user.funded- incomingAmount}
+        },transaction: {
+          type:'debit',
+          amount: incomingAmount,
+          date: new Date().toLocaleString(),
+          balance: user.funded-incomingAmount,
+          id:crypto.randomBytes(32).toString("hex"),
+      }}
+    )
+
+    
+      res.json({
+      status: 'ok',
+      funded: req.body.amount,
+      name: user.firstname,
+      email: user.email,
+      message: `your account has been debited with $${incomingAmount} USD, Thanks.`,
+      subject: 'Debit Alert',
+      upline:null
+    })
+    
+  } catch (error) {
+    console.log(error)
+    res.json({ status: 'error' })
+  }
+  }
+  else {
+    res.json({
+      status: 'error',
+      funded: req.body.amount,
+      error:'capital cannot be negative'
+    })
+  }
+  
+})
+
 app.post('/api/admin', async (req, res) => {
   const admin = await Admin.findOne({email:req.body.email})
   if(admin){
