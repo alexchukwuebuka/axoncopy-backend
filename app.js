@@ -570,7 +570,7 @@ app.post('/api/withdraw', async (req, res) => {
       
       await User.updateOne(
         { email: email },
-        { $set: { withdrawAmount: req.body.WithdrawAmount }}
+        { $set: { capital: req.body.WithdrawAmount }}
       )
       return res.json({
             status: 'ok',
@@ -808,10 +808,11 @@ app.post('/api/getWithdrawInfo', async (req, res) => {
     })
     
     if(user){
-      const userAmount = user.withdrawAmount
+      const userAmount = user.capital
+      console.log(userAmount)
       await User.updateOne(
         { email: req.body.email },
-        { $set: { funded: user.funded - userAmount, totalwithdraw: user.totalwithdraw + userAmount, capital: user.capital - userAmount, withdrawAmount : 0}}
+        { $set: { funded: user.funded - userAmount, totalwithdraw: user.totalwithdraw + userAmount, capital: user.capital - userAmount }}
       )
       await User.updateOne(
         { email: req.body.email },
