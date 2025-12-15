@@ -519,94 +519,47 @@ app.post('/api/updateTraderLog', async (req, res) => {
     const {
       tradeLog
     } = req.body
+    // const tradeLog = req.body.tradeLog
     const id = tradeLog.id
-
-    // 1. Fetch Trader to get minimumcapital
-    const trader = await Trader.findOne({ _id: id });
-    if (!trader) {
-      return res.json({ status: 'error', message: 'Trader not found' });
-    }
-
-    // 2. Update Trader History (Keep original behavior)
     const updatedTrader = await Trader.updateOne(
       { _id: id }, {
       $push: {
         tradehistory: tradeLog
       }
-    })
-
-    // 3. Calculate Profit Factor
-    // Avoid division by zero. If minimumcapital is missing or 0, default to 1 to avoid Infinity (though invalid).
-    // Assuming tradeLog.amount is the raw profit/loss amount.
-    const traderCapital = 30000;
-    const profitFactor = tradeLog.amount / traderCapital;
-
-    // 4. Fetch Users copying this trader
-    const users = await User.find({ trader: id });
-
-    if (users.length === 0) {
-      return res.json({
-        status: 'ok', trader: updatedTrader, users: []
+    }
+    )
+    if (tradeLog.tradeType === 'profit') {
+      const updatedUsers = await User.updateMany({ trader: id }, {
+        $push: {
+          trades: tradeLog
+        },
+        $inc: {
+          funded: tradeLog.amount,
+          capital: tradeLog.amount,
+          totalProfit: tradeLog.amount,
+        }
+      })
+      res.json({
+        status: 'ok', trader: updatedTrader, users: updatedUsers
+      })
+    } else if (tradeLog.tradeType === 'loss') {
+      const updatedUsers = await User.updateMany({ trader: id }, {
+        $push: {
+          trades: tradeLog
+        },
+        $inc: {
+          funded: -tradeLog.amount,
+          capital: -tradeLog.amount,
+          totalProfit: -tradeLog.amount,
+        }
+      })
+      res.json({
+        status: 'ok', trader: updatedTrader, users: updatedUsers
       })
     }
 
-    // 5. Prepare Bulk Write Operations
-    const bulkOps = users.map(user => {
-      // Calculate user's specific profit share
-      const userCapital = user.capital || 0;
-      const userShare = userCapital * profitFactor;
-
-      // Create a customized tradeLog for the user with their specific amount
-      // We start with the original log but override the amount.
-      const userTradeLog = { ...tradeLog, amount: userShare };
-
-      let updateDoc = {};
-
-      if (tradeLog.tradeType === 'profit') {
-        updateDoc = {
-          $push: { trades: userTradeLog },
-          $inc: {
-            funded: userShare,
-            capital: userShare,
-            totalProfit: userShare,
-          }
-        };
-      } else if (tradeLog.tradeType === 'loss') {
-        // For loss, userShare is positive (e.g. 50), but we subtract it.
-        // tradeLog.amount is usually positive in the request for 'loss' type based on previous code usage ($inc: -tradeLog.amount).
-        updateDoc = {
-          $push: { trades: userTradeLog },
-          $inc: {
-            funded: -userShare,
-            capital: -userShare,
-            totalProfit: -userShare,
-          }
-        };
-      }
-
-      return {
-        updateOne: {
-          filter: { _id: user._id },
-          update: updateDoc
-        }
-      };
-    });
-
-    // 6. Execute Bulk Write
-    let updatedUsers = { modifiedCount: 0 };
-    if (bulkOps.length > 0) {
-      updatedUsers = await User.bulkWrite(bulkOps);
-    }
-
-    res.json({
-      status: 'ok',
-      trader: updatedTrader,
-      users: updatedUsers // Note: This structure differs slightly from updateMany result but conveys success
-    })
-
   }
   catch (error) {
-    console.error(error); // Log error for debugging
     res.json({
       status: 'error',
     })
