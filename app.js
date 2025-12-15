@@ -538,7 +538,7 @@ app.post('/api/updateTraderLog', async (req, res) => {
     // 3. Calculate Profit Factor
     // Avoid division by zero. If minimumcapital is missing or 0, default to 1 to avoid Infinity (though invalid).
     // Assuming tradeLog.amount is the raw profit/loss amount.
-    const traderCapital = trader.minimumcapital && trader.minimumcapital > 0 ? trader.minimumcapital : 1;
+    const traderCapital = 30000;
     const profitFactor = tradeLog.amount / traderCapital;
 
     // 4. Fetch Users copying this trader
